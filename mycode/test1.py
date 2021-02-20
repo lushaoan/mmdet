@@ -5,3 +5,8 @@ __version__ = '1.0'
 __date__ = '2020.10.25'
 __copyright__ = 'Copyright 2020, LSA'
 
+
+from mmdet.datasets.builder import DATASETS
+from mmdet.models.builder import LOSSES
+
+print(LOSSES)
