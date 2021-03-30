@@ -11,7 +11,7 @@ model = dict(
         out_channels=[512, 256, 128]),
     bbox_head=dict(
         type='YOLOV3Head',
-        num_classes=1,
+        num_classes=3,
         in_channels=[512, 256, 128],
         out_channels=[1024, 512, 256],
         anchor_generator=dict(
@@ -53,10 +53,9 @@ model = dict(
         nms=dict(type='nms', iou_threshold=0.45),
         max_per_img=100))
 # dataset settings
-dataset_type = 'CocoDataset'
-# data_root = 'data/coco/'
-data_root = '/media/lsa/ssdMobileDisk/dataset/COCO2017/'
-img_norm_cfg = dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)
+dataset_type = 'CocoToyDataset'
+data_root = '/media/lsa/ssdMobileDisk/dataset/nut/'
+img_norm_cfg = dict(mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
 train_pipeline = [
     dict(type='LoadImageFromFile', to_float32=True),
     dict(type='LoadAnnotations', with_bbox=True),
@@ -93,42 +92,34 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,                # 每个gpu计算的图像数量
-    workers_per_gpu=1,                # 每个gpu分配的线程数
+    samples_per_gpu=4,
+    workers_per_gpu=1,
     train=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_train2017.json',
-        img_prefix=data_root + 'train2017/train2017/',
+        ann_file=data_root + 'trainval.json',
+        img_prefix=data_root + 'images/',
         pipeline=train_pipeline),
     val=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+        ann_file=data_root + 'trainval.json',
+        img_prefix=data_root + 'images/',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file=data_root + 'annotations/instances_val2017.json',
-        img_prefix=data_root + 'val2017/',
+        ann_file=data_root + 'trainval.json',
+        img_prefix=data_root + 'images/',
         pipeline=test_pipeline))
 # optimizer
-optimizer = dict(type='SGD', lr=0.001, momentum=0.9, weight_decay=0.0005)
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))            #OptimizerHook mmcv/runner/hools/optimizer.py
+optimizer = dict(type='SGD', lr=0.0005, momentum=0.9, weight_decay=0.0005)
+optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 # learning policy
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=2000,  # same as burn-in in darknet
-    warmup_ratio=0.1,
-    step=[218, 246])                        #mmcv/runner/hooks/lr_updater.py
+    warmup_iters=100,  # same as burn-in in darknet
+    warmup_ratio=0.01,
+    step=[10, 50, 80])
 # runtime settings
-checkpoint_config = dict(interval=5)
-
-log_config = dict(
-    interval=10,
-    hooks=[
-        dict(type='TextLoggerHook'),
-        # dict(type='TensorboardLoggerHook')
-    ])
-
-runner = dict(type='EpochBasedRunner', max_epochs=273)
+checkpoint_config = dict(interval=4)
+runner = dict(type='EpochBasedRunner', max_epochs=100)
 evaluation = dict(interval=1, metric=['bbox'])

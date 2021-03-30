@@ -1,9 +1,10 @@
 from argparse import ArgumentParser
 import sys
 
+import sys
 import os
-sys.path.append(os.path.abspath('./'))
-print(sys.path)
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../'))
 from mmdet.apis import inference_detector, init_detector, show_result_pyplot
 
 def main():
