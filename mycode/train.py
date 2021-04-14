@@ -5,6 +5,7 @@ __version__ = '1.0'
 __date__ = '2021.03.27'
 __copyright__ = 'Copyright 2021, LSA'
 
+
 import sys
 import os
 
@@ -22,8 +23,10 @@ from mmdet.models import build_detector
 if __name__ == '__main__':
     # cfg = Config.fromfile('../configs/rpn/rpn_r50_fpn_1x_coco_toy.py')
     # cfg.work_dir = '/media/lsa/ssdMobileDisk/open-mmlab/mmdetection/work_dir/coco_toy_rpn'
-    cfg = Config.fromfile('../configs/yolo/yolov3_d53_mstrain-608_273e_coco.py')
-    cfg.work_dir = '../work_dir/tiny_coco'
+    # cfg = Config.fromfile('../configs/yolo/yolov3_d53_mstrain-608_273e_coco.py')
+    # cfg.work_dir = '../work_dir/tiny_coco'
+    cfg = Config.fromfile('../configs/yolo/yolov3_d53_mstrain-608_273e_makeup.py')
+    cfg.work_dir = '../work_dir/makeup3'
     cfg.gpu_ids = range(1)
     cfg.seed = None
 

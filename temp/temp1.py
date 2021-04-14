@@ -6,5 +6,4 @@ __date__ = '2021.03.27'
 __copyright__ = 'Copyright 2021, LSA'
 
 import torch
-
-print(torch.cuda.is_available())
+torch.optim.lr_scheduler.StepLR
