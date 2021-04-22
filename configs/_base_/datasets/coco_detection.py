@@ -1,3 +1,4 @@
+# dataset settings
 dataset_type = 'CocoDataset'
 # data_root = 'data/coco/'
 data_root = '/media/lsa/ssdMobileDisk/dataset/COCO2017/'
