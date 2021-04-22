@@ -454,8 +454,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         target_label = target_map[..., 5:]
 
         loss_cls = self.loss_cls(pred_label, target_label, weight=pos_mask)
-        loss_conf = self.loss_conf(
-            pred_conf, target_conf, weight=pos_and_neg_mask)
+        loss_conf = self.loss_conf(pred_conf, target_conf, weight=pos_and_neg_mask)
         loss_xy = self.loss_xy(pred_xy, target_xy, weight=pos_mask)
         loss_wh = self.loss_wh(pred_wh, target_wh, weight=pos_mask)
 
@@ -522,7 +521,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             anchor_strides.append(
                 torch.tensor(self.featmap_strides[i],
                              device=gt_bboxes.device).repeat(len(anchors[i])))
-        concat_anchors = torch.cat(anchors)
+        concat_anchors = torch.cat(anchors)   # 三个输出层的anchor合并
         concat_responsible_flags = torch.cat(responsible_flags)
 
         anchor_strides = torch.cat(anchor_strides)
@@ -534,14 +533,15 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
         sampling_result = self.sampler.sample(assign_result, concat_anchors,
                                               gt_bboxes)
 
+        # 转化为最终计算Loss所需要的格式
         target_map = concat_anchors.new_zeros(
-            concat_anchors.size(0), self.num_attrib)
+            concat_anchors.size(0), self.num_attrib)  # 5+class_count
 
         target_map[sampling_result.pos_inds, :4] = self.bbox_coder.encode(
             sampling_result.pos_bboxes, sampling_result.pos_gt_bboxes,
             anchor_strides[sampling_result.pos_inds])
 
-        target_map[sampling_result.pos_inds, 4] = 1
+        target_map[sampling_result.pos_inds, 4] = 1   # confidence label
 
         gt_labels_one_hot = F.one_hot(
             gt_labels, num_classes=self.num_classes).float()
@@ -550,7 +550,7 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
                 1 - self.one_hot_smoother
             ) + self.one_hot_smoother / self.num_classes
         target_map[sampling_result.pos_inds, 5:] = gt_labels_one_hot[
-            sampling_result.pos_assigned_gt_inds]
+            sampling_result.pos_assigned_gt_inds]   # class one hot label
 
         neg_map = concat_anchors.new_zeros(
             concat_anchors.size(0), dtype=torch.uint8)

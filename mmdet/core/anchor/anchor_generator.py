@@ -594,6 +594,7 @@ class LegacySSDAnchorGenerator(SSDAnchorGenerator, LegacyAnchorGenerator):
 @ANCHOR_GENERATORS.register_module()
 class YOLOAnchorGenerator(AnchorGenerator):
     """Anchor generator for YOLO.
+    返回的原始anchor是 (x1,y1,x2,y2) 结构
 
     Args:
         strides (list[int] | list[tuple[int, int]]): Strides of anchors
@@ -612,7 +613,7 @@ class YOLOAnchorGenerator(AnchorGenerator):
             assert num_anchor_per_level == len(base_sizes_per_level)
             self.base_sizes.append(
                 [_pair(base_size) for base_size in base_sizes_per_level])
-        self.base_anchors = self.gen_base_anchors()
+        self.base_anchors = self.gen_base_anchors()   #只算每个scale基准的anchor，大小是确定的，其余的anchor只要在这个基础上给offset就行了
 
     @property
     def num_levels(self):
@@ -638,7 +639,7 @@ class YOLOAnchorGenerator(AnchorGenerator):
 
     def gen_single_level_base_anchors(self, base_sizes_per_level, center=None):
         """Generate base anchors of a single level.
-
+        返回在第一个位置(0,0)时的位置和大小，之后每个anchor只要改变center的位置就行了
         Args:
             base_sizes_per_level (list[tuple[int, int]]): Basic sizes of
                 anchors.
@@ -655,6 +656,12 @@ class YOLOAnchorGenerator(AnchorGenerator):
 
             # use float anchor and the anchor's center is aligned with the
             # pixel center
+            # 这里的x_center和y_center为base的grid cell的中心点坐标，即原图尺度的左上角第一个格子的中心坐标。
+            # 例如在尺度为20X20的特征图上，其x和y方向的stride均为320/20=16，因此x_center和y_center为[stride_x/2,stride_y/2]=[8,8]。
+            # 最终获取的一层输出的base_anchors 尺度为3X4，其中3为anchor个数。
+            # 然后再通过grid_anchors()方法将base_anchors扩充到整个特征图上，为了后续计算方便，对特征图的宽高wh拉成一个维度。
+            # 最终得到的anchor_list是长度为8（batchsize）的list，list中每一个元素是长度为3（输出层的个数）的list，
+            # 内包含3个tensor，尺度分别为300X4（3个anchor X 特征图宽10 X 特征图高10，下同），1200X4，4800X4。
             base_anchor = torch.Tensor([
                 x_center - 0.5 * w, y_center - 0.5 * h, x_center + 0.5 * w,
                 y_center + 0.5 * h
@@ -710,18 +717,22 @@ class YOLOAnchorGenerator(AnchorGenerator):
                 feature map.
         """
         feat_h, feat_w = featmap_size
+        # 获取gt的中心位置
+        #由于有n个gt，所以gt_bboxes_cx， gt_bboxes_cy是nx1的tensor
         gt_bboxes_cx = ((gt_bboxes[:, 0] + gt_bboxes[:, 2]) * 0.5).to(device)
         gt_bboxes_cy = ((gt_bboxes[:, 1] + gt_bboxes[:, 3]) * 0.5).to(device)
+        # 将gt的中心位置映射到特征图尺寸
         gt_bboxes_grid_x = torch.floor(gt_bboxes_cx / stride[0]).long()
         gt_bboxes_grid_y = torch.floor(gt_bboxes_cy / stride[1]).long()
 
         # row major indexing
-        gt_bboxes_grid_idx = gt_bboxes_grid_y * feat_w + gt_bboxes_grid_x
+        # 将w和h方向拉成一个维度
+        gt_bboxes_grid_idx = gt_bboxes_grid_y * feat_w + gt_bboxes_grid_x # 计算gt的位置
 
         responsible_grid = torch.zeros(
             feat_h * feat_w, dtype=torch.uint8, device=device)
-        responsible_grid[gt_bboxes_grid_idx] = 1
+        responsible_grid[gt_bboxes_grid_idx] = 1  # 计算当前gt bbox中心在特征图的hxw的哪个位置，存在gt的位置设置为1
 
         responsible_grid = responsible_grid[:, None].expand(
-            responsible_grid.size(0), num_base_anchors).contiguous().view(-1)
+            responsible_grid.size(0), num_base_anchors).contiguous().view(-1) # 扩展到每层的n个anchor上 输出维度=hxwx3
         return responsible_grid

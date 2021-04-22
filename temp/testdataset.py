@@ -41,7 +41,7 @@ for cat in category_ids:
             single_anno = coco.loadAnns(ids=ann_id)[0]
             if single_anno['category_id'] == cat and single_anno['iscrowd'] == 0:
                 desired_annotations.append(single_anno)
-                print(single_anno['bbox'])
+                # print(single_anno['bbox'])
 #                 cv2.rectangle(img=img, pt1=(int(single_anno['bbox'][0]), int(single_anno['bbox'][1])),
 #                               pt2=(int(single_anno['bbox'][0]+single_anno['bbox'][2]), int(single_anno['bbox'][1]+single_anno['bbox'][3])),
 #                               color=(0,255,0), thickness=1)

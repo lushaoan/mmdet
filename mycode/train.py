@@ -19,12 +19,15 @@ from mmcv.utils import get_git_hash
 from mmdet.apis import set_random_seed, train_detector
 from mmdet.datasets import build_dataset
 from mmdet.models import build_detector
+import shutil
 
 if __name__ == '__main__':
     # cfg = Config.fromfile('../configs/rpn/rpn_r50_fpn_1x_coco_toy.py')
     # cfg.work_dir = '/media/lsa/ssdMobileDisk/open-mmlab/mmdetection/work_dir/coco_toy_rpn'
     # cfg = Config.fromfile('../configs/yolo/yolov3_d53_mstrain-608_273e_coco.py')
     # cfg.work_dir = '../work_dir/tiny_coco'
+    # cfg = Config.fromfile('../configs/retinanet/retinanet_r50_fpn_1x_coco.py')
+    # cfg.work_dir = '../work_dir/retinanet_coco'
     cfg = Config.fromfile('../configs/yolo/yolov3_d53_mstrain-608_273e_makeup.py')
     cfg.work_dir = '../work_dir/makeup3'
     cfg.gpu_ids = range(1)
@@ -40,3 +43,4 @@ if __name__ == '__main__':
         datasets,
         cfg,
         distributed=False)
+    # shutil.copy(cfg_file, os.path.join(cfg.work_dir, cfg_file.split('/')[-1]))

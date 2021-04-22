@@ -8,6 +8,8 @@ import onnxruntime as rt
 import torch
 from mmcv import DictAction
 
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../'))
 from mmdet.core import (build_model_from_cfg, generate_inputs_and_wrap_model,
                         preprocess_example_input)
 
