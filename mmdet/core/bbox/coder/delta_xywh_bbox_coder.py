@@ -117,6 +117,10 @@ def bbox2delta(proposals, gt, means=(0., 0., 0., 0.), stds=(1., 1., 1., 1.)):
     gw = gt[..., 2] - gt[..., 0]
     gh = gt[..., 3] - gt[..., 1]
 
+    '''
+    论文中Appendix C 公式 6～9
+    dx, dy, dw, dh就是希望网络输出出来的东西
+    '''
     dx = (gx - px) / pw
     dy = (gy - py) / ph
     dw = torch.log(gw / pw)
@@ -185,9 +189,7 @@ def delta2bbox(rois,
                 [0.0000, 0.3161, 4.1945, 0.6839],
                 [5.0000, 5.0000, 5.0000, 5.0000]])
     """
-    means = deltas.new_tensor(means).view(1,
-                                          -1).repeat(1,
-                                                     deltas.size(-1) // 4)
+    means = deltas.new_tensor(means).view(1,-1).repeat(1,deltas.size(-1) // 4)
     stds = deltas.new_tensor(stds).view(1, -1).repeat(1, deltas.size(-1) // 4)
     denorm_deltas = deltas * stds + means
     dx = denorm_deltas[..., 0::4]
@@ -205,6 +207,9 @@ def delta2bbox(rois,
     # Compute width/height of each roi
     pw = (x2 - x1).unsqueeze(-1).expand_as(dw)
     ph = (y2 - y1).unsqueeze(-1).expand_as(dh)
+    '''
+    论文中Appendix C 公式 1～4
+    '''
     # Use exp(network energy) to enlarge/shrink each roi
     gw = pw * dw.exp()
     gh = ph * dh.exp()

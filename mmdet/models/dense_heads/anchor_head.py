@@ -652,8 +652,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 scores = cls_score.sigmoid()
             else:
                 scores = cls_score.softmax(-1)
-            bbox_pred = bbox_pred.permute(0, 2, 3,
-                                          1).reshape(batch_size, -1, 4)
+            bbox_pred = bbox_pred.permute(0, 2, 3, 1).reshape(batch_size, -1, 4)
             anchors = anchors.expand_as(bbox_pred)
             # Always keep topk op for dynamic input in onnx
             if nms_pre_tensor > 0 and (torch.onnx.is_in_onnx_export()
@@ -681,8 +680,7 @@ class AnchorHead(BaseDenseHead, BBoxTestMixin):
                 bbox_pred = bbox_pred[batch_inds, topk_inds, :]
                 scores = scores[batch_inds, topk_inds, :]
 
-            bboxes = self.bbox_coder.decode(
-                anchors, bbox_pred, max_shape=img_shapes)
+            bboxes = self.bbox_coder.decode(anchors, bbox_pred, max_shape=img_shapes)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 
