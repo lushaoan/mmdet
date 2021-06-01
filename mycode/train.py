@@ -30,9 +30,9 @@ if __name__ == '__main__':
     # cfg.work_dir = '../work_dir/retinanet_coco'
     # cfg = Config.fromfile('../configs/yolo/yolov3_d53_mstrain-608_273e_makeup.py')
     # cfg.work_dir = '../work_dir/makeup3'
-    cfg_file = '../configs/retinanet/retinanet_r50_fpn_1x_makeup.py'
+    cfg_file = '../configs/yolo/yolov3_d53_mstrain-608_273e_plug.py'
     cfg = Config.fromfile(cfg_file)
-    cfg.work_dir = '../work_dir/makeup_retina'
+    cfg.work_dir = '../work_dir/plug'
     cfg.gpu_ids = range(1)
     cfg.seed = None
 
