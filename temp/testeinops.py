@@ -10,6 +10,10 @@ import numpy as np
 import cv2
 from einops import rearrange, repeat
 import torch
+from mmdet.models.builder import MODELS
+
+print(MODELS)
+
 
 imgs = np.load('./test_images.npy')
 print(imgs.shape)
