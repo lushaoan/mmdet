@@ -11,7 +11,7 @@ __copyright__ = 'Copyright 2021, PI'
 #                                         /media/lsa/ssdMobileDisk/open-mmlab/mmdetection/work_dir/makeup2/latest.pth
 #                                         --output-file work_dir/makeup2/makeup.onnx
 #                                         --input-img /media/lsa/MobileDisk3/dataset/Makeup/bottom/raw/clear/38.bmp
-#                                         --shape 608 608
+#                                         --shape 608 512
 
 
 import cv2
@@ -60,16 +60,16 @@ from einops import rearrange
 # valid_obj_id = res[:, 4] > 0.1
 # found = res[valid_obj_id]
 
-onnx_file = '../work_dir/yolov3_sample.onnx'
-img_path = '../demo/demo.jpg'
+onnx_file = '/media/lsa/ssdMobileDisk/open-mmlab/mmdetection/work_dir/plug2/plug.onnx'
+img_path = '/media/lsa/MobileDisk3/dataset/PieProject/plug2/alldata/leftimg_1.bmp'
 img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-img = cv2.resize(src=img, dsize=(608, 608))
+img = cv2.resize(src=img, dsize=(608, 512))
 
 img_np = np.array([np.float32(img) / 255.]).transpose(0, 3, 1, 2)
 session = onnxruntime.InferenceSession(onnx_file)
 input_name = session.get_inputs()[0].name
 output_name = session.get_outputs()[0].name
-res = session.run([output_name], {input_name: img_np})[0]
+res = session.run([output_name], {input_name: img_np})[0][0]
 valid_obj_id = res[:, 4] > 0.7
 found = res[valid_obj_id]
 #

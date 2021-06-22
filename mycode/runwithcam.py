@@ -489,6 +489,7 @@ def detectAllInOne(image, yoloModel, keypointModelSession, yoloThre):
     result = inference_detector(yoloModel, image)[0]
 
     for ele in result:
+        print('yolo score', ele[4])
         if ele[4] > yoloThre:
             bbox = [int(ele[0]), int(ele[1]), int(ele[2]-ele[0]), int(ele[3]-ele[1])]
             center, scale = box2cs(box=bbox, input_size=input_size)
@@ -524,17 +525,26 @@ def detectAllInOne(image, yoloModel, keypointModelSession, yoloThre):
             preds, maxvals = keypoints_from_heatmaps(heatmaps=output_heatmap, center=center, scale=scale)
             pts = preds[0]
 
-            return pts
+            return bbox, pts
 
-    return np.array([])
+    return np.array([]), np.array([])
+
+
+def calLastPoint(pts):
+    vet1 = pts[0] - pts[1]
+    vet2 = pts[2] - pts[1]
+    res = vet1 + vet2
+    res = res + pts[1]
+    return res
+
 
 if __name__ == '__main__':
 
     config_file = '../configs/yolo/yolov3_d53_mstrain-608_273e_plug.py'
-    checkpoint_file = '/media/pi/ssdMobileDisk/open-mmlab/mmdetection/work_dir/plug/latest.pth'
+    checkpoint_file = '/media/pi/ssdMobileDisk/open-mmlab/mmdetection/work_dir/plug2/latest.pth'
     model = init_detector(config_file, checkpoint_file, device='cpu')
 
-    onnx_file = '/media/pi/ssdMobileDisk/open-mmlab/mmpose/work_dir/hrnet/plug/plug.onnx'
+    onnx_file = '/media/pi/ssdMobileDisk/open-mmlab/mmpose/work_dir/hrnet/plug2_3pt/plug.onnx'
 
     session = onnxruntime.InferenceSession(onnx_file)
     input_name = session.get_inputs()[0].name
@@ -543,14 +553,18 @@ if __name__ == '__main__':
     leftcam = MVCam(index=0)
     leftcam.start()
     leftcam.setAeState(False)
-    leftcam.setAnalogGain(15)
-    leftcam.setExposureTime(50000)
+    leftcam.setAnalogGain(64)
+    leftcam.setExposureTime(100000)
+    leftcam.setContrast(100)
+    leftcam.setGamma(100)
 
     rightcam = MVCam(index=1)
     rightcam.start()
     rightcam.setAeState(False)
-    rightcam.setAnalogGain(15)
-    rightcam.setExposureTime(50000)
+    rightcam.setAnalogGain(64)
+    rightcam.setExposureTime(100000)
+    rightcam.setContrast(100)
+    rightcam.setGamma(100)
 
     colors = [(255, 0, 0),
               (0, 255, 0),
@@ -565,16 +579,27 @@ if __name__ == '__main__':
         right_image = rightcam.readImage()
         left_image = cv2.cvtColor(src=left_image, code=cv2.COLOR_GRAY2BGR)
         right_image = cv2.cvtColor(src=right_image, code=cv2.COLOR_GRAY2BGR)
-        left_pts = detectAllInOne(image=left_image, yoloModel=model, keypointModelSession=session, yoloThre=0.5)
-        right_pts = detectAllInOne(image=right_image, yoloModel=model, keypointModelSession=session, yoloThre=0.5)
+        lbox, left_pts = detectAllInOne(image=left_image, yoloModel=model, keypointModelSession=session, yoloThre=0.5)
+        rbox, right_pts = detectAllInOne(image=right_image, yoloModel=model, keypointModelSession=session, yoloThre=0.5)
+
+        if len(lbox):
+            cv2.rectangle(img=left_image, pt1=(int(lbox[0]), int(lbox[1])), pt2=(int(lbox[0]+lbox[2]), int(lbox[1]+lbox[3])), color=(0,255,0), thickness=2)
+        if len(rbox):
+            cv2.rectangle(img=right_image, pt1=(int(rbox[0]), int(rbox[1])), pt2=(int(rbox[0]+rbox[2]), int(rbox[1]+rbox[3])), color=(0,255,0), thickness=2)
 
         for i, p in enumerate(left_pts):
             cv2.circle(img=left_image, center=(int(p[0]), int(p[1])), radius=5, thickness=5, color=colors[i])
         for i, p in enumerate(right_pts):
             cv2.circle(img=right_image, center=(int(p[0]), int(p[1])), radius=5, thickness=5, color=colors[i])
 
-        print('left pts', left_pts)
-        print('right pts', right_pts)
+        if len(left_pts):
+            left_last = calLastPoint(pts=left_pts)
+            cv2.circle(img=left_image, center=(int(left_last[0]), int(left_last[1])), radius=5, thickness=5, color=colors[3])
+        if len(right_pts):
+            right_last = calLastPoint(pts=right_pts)
+            cv2.circle(img=right_image, center=(int(right_last[0]), int(right_last[1])), radius=5, thickness=5, color=colors[3])
+        # print('left pts', left_pts)
+        # print('right pts', right_pts)
         print('---------------')
         cv2.imshow('left_img', left_image)
         cv2.imshow('right_img', right_image)

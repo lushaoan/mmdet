@@ -10,7 +10,7 @@ import torch
 from mmdet.models.backbones.resnet import ResNet
 
 
-net = ResNet(depth=50, num_stages=4, out_indices=(0,1,2,3))
+net = ResNet(depth=18)
 net.eval()
 inputs = torch.rand(1, 3, 416, 416)
 level_outputs = net.forward(inputs)
