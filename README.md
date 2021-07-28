@@ -44,7 +44,7 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 ## Changelog
 
-v2.13.0 was released in 01/06/2021.
+v2.14.0 was released in 29/06/2021.
 Please refer to [changelog.md](docs/changelog.md) for details and release history.
 A comparison between v1.x and v2.0 codebases can be found in [compatibility.md](docs/compatibility.md).
 
@@ -162,6 +162,7 @@ If you use this toolbox or benchmark in your research, please cite this project.
 ## Projects in OpenMMLab
 
 - [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab foundational library for computer vision.
+- [MIM](https://github.com/open-mmlab/mim): MIM Installs OpenMMLab Packages.
 - [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab image classification toolbox and benchmark.
 - [MMDetection](https://github.com/open-mmlab/mmdetection): OpenMMLab detection toolbox and benchmark.
 - [MMDetection3D](https://github.com/open-mmlab/mmdetection3d): OpenMMLab's next-generation platform for general 3D object detection.
