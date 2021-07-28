@@ -2,20 +2,25 @@
 # -*- coding:utf-8 -*-
 __author__ = 'Lu ShaoAn'
 __version__ = '1.0'
-__date__ = '2021.06.02'
+__date__ = '2021.07.09'
 __copyright__ = 'Copyright 2021, PI'
 
 
-import sys
-sys.path.append('../')
-from mmdet.apis import init_detector, inference_detector, show_result_pyplot
-import cv2
-from pymvcam.pymvcam import MVCam
 import numpy as np
+import cv2
 import onnxruntime
-import torch
+from einops import rearrange
+from pymvcam import MVCam
 import copy
-from einops import rearrange, reduce
+
+
+yolo_thre = 0.7
+kpt_input_size = [192, 256]
+colors = [(0, 255, 255),
+          (0, 255, 0),
+          (255, 0, 0),
+          (0, 0, 255),
+          ]
 
 
 def box2cs(box, input_size):
@@ -482,207 +487,169 @@ def keypoints_from_heatmaps(heatmaps, center, scale, unbiased=False, post_proces
     return preds, maxvals
 
 
-def detectAllInOne(image, yoloModel, keypointModelSession, yoloThre):
-    input_size = [192, 256]
-    mean = np.array([0., 0., 0.])
-    std = np.array([1., 1., 1.])
-    result = inference_detector(yoloModel, image)[0]
 
-    for ele in result:
-        if ele[4] > yoloThre:
-            bbox = [int(ele[0]), int(ele[1]), int(ele[2]-ele[0]), int(ele[3]-ele[1])]
-            center, scale = box2cs(box=bbox, input_size=input_size)
-            trans = get_affine_transform(center=center, scale=scale, rot=0, output_size=input_size)
-            img = cv2.warpAffine(image, trans, (int(input_size[0]), int(input_size[1])), flags=cv2.INTER_LINEAR)
-            img = img.astype(np.uint8)
-            cliped_img = copy.deepcopy(img)
+if __name__ == '__main2__':
+    yolo_onnx_file = '/media/pi/ssdMobileDisk/open-mmlab/mmdetection/work_dir/line5/line.onnx'
+    kpt_onnx_file = '/media/pi/ssdMobileDisk/open-mmlab/mmpose/work_dir/hrnet/line2/line.onnx'
 
-            img = img / 255.
-            img = (img - mean) / std
-            img = img.astype(np.float32)
+    yolo_session = onnxruntime.InferenceSession(yolo_onnx_file)
+    kpt_session = onnxruntime.InferenceSession(kpt_onnx_file)
+    yolo_input_name = yolo_session.get_inputs()[0].name
+    yolo_output_name = yolo_session.get_outputs()[0].name
+    kpt_input_name = kpt_session.get_inputs()[0].name
+    kpt_output_name = kpt_session.get_outputs()[0].name
 
-            input_img = rearrange(img, 'h w c -> 1 c h w')
-            output_heatmap = keypointModelSession.run([output_name], {input_name: input_img})[0]
+    # img_file = '/media/lsa/MobileDisk3/dataset/PieProject/task_labeled/0_L.bmp'
+    img_file = '/media/pi/ssdMobileDisk/open-mmlab/mmdetection/mycode/right_4.bmp'
+    raw_img = cv2.imread(img_file, cv2.IMREAD_COLOR)
+    img = cv2.resize(src=raw_img, dsize=(608, 512))
+    img_np = np.array([np.float32(img) / 255.]).transpose(0, 3, 1, 2)
 
-            # heatmap = output_heatmap[0]
-            # point_0_map = np.abs(heatmap[0])
-            # point_0_map = (point_0_map * 255).astype(np.uint8)
-            #
-            # res = reduce(heatmap, 'c h w -> h w', 'sum')
-            # res = np.abs(res) * 255
-            # res = res.astype(np.uint8)
-            # res = cv2.applyColorMap(src=res, colormap=cv2.COLORMAP_JET)
-            #
-            # res = cv2.resize(src=res, dsize=(input_size[0], input_size[1]))
-            # final_res = cv2.addWeighted(src1=cliped_img, src2=res, alpha=0.5, beta=0.5, gamma=0)
-            # cv2.imshow('final_res', final_res)
-            #
-            # cv2.rectangle(img=ori_img, pt1=(int(ele[0]), int(ele[1])), pt2=(int(ele[2]), int(ele[3])), thickness=2, color=(0,255,0))
+    yolo_res = yolo_session.run([yolo_output_name], {yolo_input_name: img_np})[0][0]
+    valid_obj_id = yolo_res[:, 4] > yolo_thre
+    found = yolo_res[valid_obj_id]  # format: xyxy
 
-            center = rearrange(center, 'c -> 1 c')
-            scale = rearrange(scale, 'c -> 1 c')
-            preds, maxvals = keypoints_from_heatmaps(heatmaps=output_heatmap, center=center, scale=scale)
-            pts = preds[0]
+    raw_height, raw_width = raw_img.shape[0:2]
+    for obj in found:
+        px1 = int(raw_width * obj[0] / 608)
+        py1 = int(raw_height * obj[1] / 512)
+        px2 = int(raw_width * obj[2] / 608)
+        py2 = int(raw_height * obj[3] / 512)
+        bbox = [px1, py1, px2-px1, py2-py1]
+        center, scale = box2cs(box=bbox, input_size=kpt_input_size)
+        trans = get_affine_transform(center=center, scale=scale, rot=0, output_size=kpt_input_size)
+        img = cv2.warpAffine(raw_img, trans, (kpt_input_size[0], kpt_input_size[1]), flags=cv2.INTER_LINEAR)
+        img = img / 255.
+        img = img.astype(np.float32)
+        input_img = rearrange(img, 'h w c -> 1 c h w')
+        output_heatmap = kpt_session.run([kpt_output_name], {kpt_input_name: input_img})[0]
+        center = rearrange(center, 'c -> 1 c')
+        scale = rearrange(scale, 'c -> 1 c')
+        preds, maxvals = keypoints_from_heatmaps(heatmaps=output_heatmap, center=center, scale=scale)
+        pts = preds[0]
+        print(pts)
+        np.savetxt('right_4.txt', pts)
+        cv2.rectangle(img=raw_img, pt1=(px1, py1), pt2=(px2, py2), color=(0,0,255), thickness=2)
+        for i, p in enumerate(pts):
+            cv2.circle(img=raw_img, center=(int(p[0]), int(p[1])), radius=5, thickness=5, color=colors[i])
 
-            return bbox, pts
-
-    return np.array([]), np.array([])
-
-
-def detectAllInOne2(image, yoloModel, keypointModelSession, yoloThre):
-    input_size = [192, 256]
-    mean = np.array([0., 0., 0.])
-    std = np.array([1., 1., 1.])
-    result = inference_detector(yoloModel, image)[0]
-
-    final_bboxes = []
-    final_kpts = []
-    for ele in result:
-        if ele[4] > yoloThre:
-            bbox = [int(ele[0]), int(ele[1]), int(ele[2]-ele[0]), int(ele[3]-ele[1])]
-            center, scale = box2cs(box=bbox, input_size=input_size)
-            trans = get_affine_transform(center=center, scale=scale, rot=0, output_size=input_size)
-            img = cv2.warpAffine(image, trans, (int(input_size[0]), int(input_size[1])), flags=cv2.INTER_LINEAR)
-            img = img.astype(np.uint8)
-            cliped_img = copy.deepcopy(img)
-
-            img = img / 255.
-            img = (img - mean) / std
-            img = img.astype(np.float32)
-
-            input_img = rearrange(img, 'h w c -> 1 c h w')
-            output_heatmap = keypointModelSession.run([output_name], {input_name: input_img})[0]
-
-            center = rearrange(center, 'c -> 1 c')
-            scale = rearrange(scale, 'c -> 1 c')
-            preds, maxvals = keypoints_from_heatmaps(heatmaps=output_heatmap, center=center, scale=scale)
-            pts = preds[0]
-
-            final_bboxes.append(bbox)
-            final_kpts.append(pts)
-
-    return final_bboxes, final_kpts
-
-
-def calLastPoint(pts):
-    vet1 = pts[0] - pts[1]
-    vet2 = pts[2] - pts[1]
-    res = vet1 + vet2
-    res = res + pts[1]
-    return res
+    cv2.namedWindow('img', cv2.WINDOW_NORMAL)
+    cv2.imshow('img', raw_img)
+    cv2.waitKey(0)
 
 
 if __name__ == '__main__':
+    yolo_onnx_file = '/media/pi/ssdMobileDisk/open-mmlab/mmdetection/work_dir/line/line.onnx'
+    kpt_onnx_file = '/media/pi/ssdMobileDisk/open-mmlab/mmpose/work_dir/hrnet/line/kpt.onnx'
 
-    config_file = '../configs/yolo/yolov3_d53_mstrain-608_273e_plug.py'
-    checkpoint_file = '/media/pi/ssdMobileDisk/open-mmlab/mmdetection/work_dir/plug2/latest.pth'
-    model = init_detector(config_file, checkpoint_file, device='cpu')
+    yolo_session = onnxruntime.InferenceSession(yolo_onnx_file)
+    kpt_session = onnxruntime.InferenceSession(kpt_onnx_file)
+    yolo_input_name = yolo_session.get_inputs()[0].name
+    yolo_output_name = yolo_session.get_outputs()[0].name
+    kpt_input_name = kpt_session.get_inputs()[0].name
+    kpt_output_name = kpt_session.get_outputs()[0].name
 
-    onnx_file = '/media/pi/ssdMobileDisk/open-mmlab/mmpose/work_dir/hrnet/plug2_3pt/plug.onnx'
+    cam_left = MVCam(acSn='058090410009')
+    cam_left.start()
+    cam_left.setAeState(False)
+    cam_left.setAnalogGain(64)
+    cam_left.setExposureTime(10000)
+    cam_left.setContrast(100)
+    cam_left.setGamma(100)
 
-    session = onnxruntime.InferenceSession(onnx_file)
-    input_name = session.get_inputs()[0].name
-    output_name = session.get_outputs()[0].name
+    cam_right = MVCam(acSn='058112110139')
+    cam_right.start()
+    cam_right.setAeState(False)
+    cam_right.setAnalogGain(64)
+    cam_right.setExposureTime(10000)
+    cam_right.setContrast(100)
+    cam_right.setGamma(100)
 
-    leftcam = MVCam(index=0)
-    leftcam.start()
-    leftcam.setAeState(False)
-    leftcam.setAnalogGain(64)
-    leftcam.setExposureTime(100000)
-    leftcam.setContrast(100)
-    leftcam.setGamma(100)
-
-    rightcam = MVCam(index=1)
-    rightcam.start()
-    rightcam.setAeState(False)
-    rightcam.setAnalogGain(64)
-    rightcam.setExposureTime(100000)
-    rightcam.setContrast(100)
-    rightcam.setGamma(100)
-
-    colors = [(255, 0, 0),
-              (0, 255, 0),
-              (0, 0, 255),
-              (0, 255, 255)]
+    cv2.namedWindow('img_left', cv2.WINDOW_NORMAL)
+    cv2.namedWindow('img_right', cv2.WINDOW_NORMAL)
     stop = False
-
-    cv2.namedWindow('left_img', cv2.WINDOW_NORMAL)
-    cv2.namedWindow('right_img', cv2.WINDOW_NORMAL)
+    count = 0
     while not stop:
-        left_image = leftcam.readImage()
-        right_image = rightcam.readImage()
-        left_image = cv2.cvtColor(src=left_image, code=cv2.COLOR_GRAY2BGR)
-        right_image = cv2.cvtColor(src=right_image, code=cv2.COLOR_GRAY2BGR)
-        lbox, left_pts = detectAllInOne(image=left_image, yoloModel=model, keypointModelSession=session, yoloThre=0.5)
-        rbox, right_pts = detectAllInOne(image=right_image, yoloModel=model, keypointModelSession=session, yoloThre=0.5)
+        raw_img_left = cam_left.readImage()
+        raw_img_left_save = copy.deepcopy(raw_img_left)
+        raw_img_left = cv2.cvtColor(src=raw_img_left, code=cv2.COLOR_GRAY2BGR)
+        img_left = cv2.resize(src=raw_img_left, dsize=(608, 512))
+        img_left_np = np.array([np.float32(img_left) / 255.]).transpose(0, 3, 1, 2)
 
-        if len(lbox):
-            cv2.rectangle(img=left_image, pt1=(int(lbox[0]), int(lbox[1])), pt2=(int(lbox[0]+lbox[2]), int(lbox[1]+lbox[3])), color=(0,255,0), thickness=2)
-        if len(rbox):
-            cv2.rectangle(img=right_image, pt1=(int(rbox[0]), int(rbox[1])), pt2=(int(rbox[0]+rbox[2]), int(rbox[1]+rbox[3])), color=(0,255,0), thickness=2)
+        raw_img_right = cam_right.readImage()
+        raw_img_right_save = copy.deepcopy(raw_img_right)
+        raw_img_right = cv2.cvtColor(src=raw_img_right, code=cv2.COLOR_GRAY2BGR)
+        img_right = cv2.resize(src=raw_img_right, dsize=(608, 512))
+        img_right_np = np.array([np.float32(img_right) / 255.]).transpose(0, 3, 1, 2)
 
-        for i, p in enumerate(left_pts):
-            cv2.circle(img=left_image, center=(int(p[0]), int(p[1])), radius=5, thickness=5, color=colors[i])
-        for i, p in enumerate(right_pts):
-            cv2.circle(img=right_image, center=(int(p[0]), int(p[1])), radius=5, thickness=5, color=colors[i])
+        # yolo_res_left = yolo_session.run([yolo_output_name], {yolo_input_name: img_left_np})[0][0]
+        # valid_obj_id_left = yolo_res_left[:, 4] > yolo_thre
+        # found_left = yolo_res_left[valid_obj_id_left]  # format: xyxy
+        #
+        # yolo_res_right = yolo_session.run([yolo_output_name], {yolo_input_name: img_right_np})[0][0]
+        # valid_obj_id_right = yolo_res_right[:, 4] > yolo_thre
+        # found_right = yolo_res_right[valid_obj_id_right]  # format: xyxy
+        #
+        # raw_height, raw_width = raw_img_left.shape[0:2]
+        # left_found_pts = None
+        # right_found_pts = None
+        #
+        # for obj in found_left:
+        #     px1 = int(raw_width * obj[0] / 608)
+        #     py1 = int(raw_height * obj[1] / 512)
+        #     px2 = int(raw_width * obj[2] / 608)
+        #     py2 = int(raw_height * obj[3] / 512)
+        #     bbox = [px1, py1, px2-px1, py2-py1]
+        #     center, scale = box2cs(box=bbox, input_size=kpt_input_size)
+        #     trans = get_affine_transform(center=center, scale=scale, rot=0, output_size=kpt_input_size)
+        #     img = cv2.warpAffine(raw_img_left, trans, (kpt_input_size[0], kpt_input_size[1]), flags=cv2.INTER_LINEAR)
+        #     img = img / 255.
+        #     img = img.astype(np.float32)
+        #     input_img = rearrange(img, 'h w c -> 1 c h w')
+        #     output_heatmap = kpt_session.run([kpt_output_name], {kpt_input_name: input_img})[0]
+        #     center = rearrange(center, 'c -> 1 c')
+        #     scale = rearrange(scale, 'c -> 1 c')
+        #     preds, maxvals = keypoints_from_heatmaps(heatmaps=output_heatmap, center=center, scale=scale)
+        #     pts = preds[0]
+        #     left_found_pts = pts
+        #
+        #     cv2.rectangle(img=raw_img_left, pt1=(px1, py1), pt2=(px2, py2), color=(0,0,255), thickness=2)
+        #     for i, p in enumerate(pts):
+        #         cv2.circle(img=raw_img_left, center=(int(p[0]), int(p[1])), radius=5, thickness=5, color=colors[i])
+        #
+        # for obj in found_right:
+        #     px1 = int(raw_width * obj[0] / 608)
+        #     py1 = int(raw_height * obj[1] / 512)
+        #     px2 = int(raw_width * obj[2] / 608)
+        #     py2 = int(raw_height * obj[3] / 512)
+        #     bbox = [px1, py1, px2-px1, py2-py1]
+        #     center, scale = box2cs(box=bbox, input_size=kpt_input_size)
+        #     trans = get_affine_transform(center=center, scale=scale, rot=0, output_size=kpt_input_size)
+        #     img = cv2.warpAffine(raw_img_right, trans, (kpt_input_size[0], kpt_input_size[1]), flags=cv2.INTER_LINEAR)
+        #     img = img / 255.
+        #     img = img.astype(np.float32)
+        #     input_img = rearrange(img, 'h w c -> 1 c h w')
+        #     output_heatmap = kpt_session.run([kpt_output_name], {kpt_input_name: input_img})[0]
+        #     center = rearrange(center, 'c -> 1 c')
+        #     scale = rearrange(scale, 'c -> 1 c')
+        #     preds, maxvals = keypoints_from_heatmaps(heatmaps=output_heatmap, center=center, scale=scale)
+        #     pts = preds[0]
+        #     right_found_pts = pts
+        #
+        #     cv2.rectangle(img=raw_img_right, pt1=(px1, py1), pt2=(px2, py2), color=(0,0,255), thickness=2)
+        #     for i, p in enumerate(pts):
+        #         cv2.circle(img=raw_img_right, center=(int(p[0]), int(p[1])), radius=5, thickness=5, color=colors[i])
 
-        if len(left_pts):
-            left_last = calLastPoint(pts=left_pts)
-            cv2.circle(img=left_image, center=(int(left_last[0]), int(left_last[1])), radius=5, thickness=5, color=colors[3])
-        if len(right_pts):
-            right_last = calLastPoint(pts=right_pts)
-            cv2.circle(img=right_image, center=(int(right_last[0]), int(right_last[1])), radius=5, thickness=5, color=colors[3])
-        # print('left pts', left_pts)
-        # print('right pts', right_pts)
-        print('---------------')
-        cv2.imshow('left_img', left_image)
-        cv2.imshow('right_img', right_image)
-
+        cv2.imshow('img_left', raw_img_left)
+        cv2.imshow('img_right', raw_img_right)
         key = cv2.waitKey(50)
         if key == 113:
             stop = True
-
-    cv2.destroyAllWindows()
-
-
-if __name__ == '__main5__':
-    config_file = '../configs/yolo/yolov3_d53_mstrain-608_273e_line2.py'
-    checkpoint_file = '/media/pi/ssdMobileDisk/open-mmlab/mmdetection/work_dir/line4/latest.pth'
-    model = init_detector(config_file, checkpoint_file, device='cuda:0')
-    onnx_file = '/media/pi/ssdMobileDisk/open-mmlab/mmpose/work_dir/hrnet/line/line.onnx'
-    session = onnxruntime.InferenceSession(onnx_file)
-    input_name = session.get_inputs()[0].name
-    output_name = session.get_outputs()[0].name
-
-    cam = MVCam(index=0)
-    cam.start()
-    cam.setAeState(False)
-    cam.setAnalogGain(4)
-    cam.setExposureTime(18000)
-    cam.setContrast(100)
-    cam.setGamma(100)
-
-    colors = [(0, 255, 255),
-              (0, 255, 0),
-              (255, 0, 0),
-              (0, 0, 255),
-              ]
-    stop = False
-    cv2.namedWindow('img', cv2.WINDOW_NORMAL)
-
-    while not stop:
-        image = cam.readImage()
-        image = cv2.cvtColor(src=image, code=cv2.COLOR_GRAY2BGR)
-        bboxes, all_pts = detectAllInOne2(image=image, yoloModel=model, keypointModelSession=session, yoloThre=0.5)
-
-        for bbox, pts in zip(bboxes, all_pts):
-            cv2.rectangle(img=image, pt1=(bbox[0], bbox[1]), pt2=(bbox[0]+bbox[2], bbox[1]+bbox[3]), color=(0,0,255), thickness=2)
-            for i, p in enumerate(pts):
-                cv2.circle(img=image, center=(int(p[0]), int(p[1])), radius=5, thickness=5, color=colors[i])
-
-        cv2.imshow('img', image)
-        key = cv2.waitKey(50)
-        if key == 113:
-            stop = True
+        elif key == 116:
+            cv2.imwrite(f'left_cur.bmp', raw_img_left_save)
+            cv2.imwrite(f'right_cur.bmp', raw_img_right_save)
+            # np.savetxt(f'left_cur.txt', left_found_pts)
+            # np.savetxt(f'right_cur.txt', right_found_pts)
+            count += 1
 
     cv2.destroyAllWindows()

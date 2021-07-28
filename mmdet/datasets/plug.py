@@ -16,7 +16,7 @@ from .custom import CustomDataset
 
 @DATASETS.register_module()
 class PlugDataset(CustomDataset):
-    CLASSES = ('plug',)
+    CLASSES = ('obj',)
 
     def load_annotations(self, ann_file):
         data_infos = []

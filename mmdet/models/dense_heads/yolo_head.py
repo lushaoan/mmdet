@@ -145,8 +145,8 @@ class YOLOV3Head(BaseDenseHead, BBoxTestMixin):
             conv_pred = nn.Conv2d(self.out_channels[i],
                                   self.num_anchors * self.num_attrib, 1)
 
-            self.convs_bridge.append(conv_bridge)
-            self.convs_pred.append(conv_pred)
+            self.convs_bridge.append(conv_bridge)   #这个就是输出前的DBL(conv+bn+leakyReLu)
+            self.convs_pred.append(conv_pred)       #DBL后面接的conv
 
     def init_weights(self):
         for m in self.modules():

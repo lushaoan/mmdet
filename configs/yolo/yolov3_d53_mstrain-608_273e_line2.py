@@ -25,7 +25,7 @@ model = dict(
         anchor_generator=dict(
             type='YOLOAnchorGenerator',
             base_sizes=[[(350, 350), (350, 340), (370, 350)],
-                        [(70, 70), (60, 60), (50, 50)],
+                        [(30, 61), (40, 70), (25, 54)],
                         [(10, 10), (15, 15), (15, 15)]],
             strides=[32, 16, 8]),
         bbox_coder=dict(type='YOLOBBoxCoder'),
@@ -62,6 +62,7 @@ model = dict(
         max_per_img=100))
 # dataset settings
 dataset_type = 'PlugDataset'
+# data_root = '/media/lsa/MobileDisk3/dataset/PieProject/line3'
 data_root = '/media/lsa/MobileDisk3/dataset/PieProject/line/alldata'
 img_norm_cfg = dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)
 train_pipeline = [

@@ -19,7 +19,7 @@ Yolo还有一个设置就是忽略样本，也就是anchor和gt box有较大的i
     忽略样本：和gt box的iou大于一定阈值，但又不负责该gt box的anchor，一般指中心点grid cell附近的其他grid cell 里的anchor。不计算任何loss。
 
 下面看具体实现。代码是同时确定gt box是分配在哪一层的哪一个或几个anchor上。
-具体的类为GridAssigner，其中输入参数为：Bboxes：所有的anchor。box_responsible_flags：gt 
+具体的类为GridAssigner，其中输入参数为：Bboxes,所有的anchor,box_responsible_flags,gt 
 第一步分配的anchor flags，主要是记录在候选anchor中分配。和gt_bboxes。
 该类遍历batch，维护一个assigned_gt_inds，类似mask的概念，元素值会被分配为-1：忽略样本，0：负样本，正整数：正样本，
 同时数字代表负责的gt box的索引。具体步骤如下：

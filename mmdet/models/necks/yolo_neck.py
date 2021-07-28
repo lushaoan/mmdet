@@ -44,11 +44,9 @@ class DetectionBlock(BaseModule):
         # shortcut
         cfg = dict(conv_cfg=conv_cfg, norm_cfg=norm_cfg, act_cfg=act_cfg)
         self.conv1 = ConvModule(in_channels, out_channels, 1, **cfg)
-        self.conv2 = ConvModule(
-            out_channels, double_out_channels, 3, padding=1, **cfg)
+        self.conv2 = ConvModule(out_channels, double_out_channels, 3, padding=1, **cfg)
         self.conv3 = ConvModule(double_out_channels, out_channels, 1, **cfg)
-        self.conv4 = ConvModule(
-            out_channels, double_out_channels, 3, padding=1, **cfg)
+        self.conv4 = ConvModule(out_channels, double_out_channels, 3, padding=1, **cfg)
         self.conv5 = ConvModule(double_out_channels, out_channels, 1, **cfg)
 
     def forward(self, x):

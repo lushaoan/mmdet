@@ -729,10 +729,9 @@ class YOLOAnchorGenerator(AnchorGenerator):
         # 将w和h方向拉成一个维度
         gt_bboxes_grid_idx = gt_bboxes_grid_y * feat_w + gt_bboxes_grid_x # 计算gt的位置
 
-        responsible_grid = torch.zeros(
-            feat_h * feat_w, dtype=torch.uint8, device=device)
+        responsible_grid = torch.zeros(feat_h * feat_w, dtype=torch.uint8, device=device)
         responsible_grid[gt_bboxes_grid_idx] = 1  # 计算当前gt bbox中心在特征图的hxw的哪个位置，存在gt的位置设置为1
 
         responsible_grid = responsible_grid[:, None].expand(
-            responsible_grid.size(0), num_base_anchors).contiguous().view(-1) # 扩展到每层的n个anchor上 输出维度=hxwx3
+            responsible_grid.size(0), num_base_anchors).contiguous().view(-1) # 扩展到每层的n个anchor上 输出维度 (hxwx3, )
         return responsible_grid
