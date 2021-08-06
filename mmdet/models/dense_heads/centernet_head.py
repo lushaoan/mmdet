@@ -160,18 +160,9 @@ class CenterNetHead(BaseDenseHead, BBoxTestMixin):
 
         # Since the channel of wh_target and offset_target is 2, the avg_factor
         # of loss_center_heatmap is always 1/2 of loss_wh and loss_offset.
-        loss_center_heatmap = self.loss_center_heatmap(
-            center_heatmap_pred, center_heatmap_target, avg_factor=avg_factor)
-        loss_wh = self.loss_wh(
-            wh_pred,
-            wh_target,
-            wh_offset_target_weight,
-            avg_factor=avg_factor * 2)
-        loss_offset = self.loss_offset(
-            offset_pred,
-            offset_target,
-            wh_offset_target_weight,
-            avg_factor=avg_factor * 2)
+        loss_center_heatmap = self.loss_center_heatmap(center_heatmap_pred, center_heatmap_target, avg_factor=avg_factor)
+        loss_wh = self.loss_wh(wh_pred, wh_target, wh_offset_target_weight, avg_factor=avg_factor * 2)
+        loss_offset = self.loss_offset(offset_pred, offset_target, wh_offset_target_weight, avg_factor=avg_factor * 2)
         return dict(
             loss_center_heatmap=loss_center_heatmap,
             loss_wh=loss_wh,

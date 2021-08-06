@@ -16,10 +16,10 @@ model = dict(
         in_channel=512,
         num_deconv_filters=(256, 128, 64),
         num_deconv_kernels=(4, 4, 4),
-        use_dcn=True),
+        use_dcn=False),
     bbox_head=dict(
         type='CenterNetHead',
-        num_classes=80,
+        num_classes=1,
         in_channel=64,
         feat_channel=64,
         loss_center_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
@@ -85,29 +85,43 @@ test_pipeline = [
         ])
 ]
 
-dataset_type = 'CocoDataset'
-data_root = '/home/lsa/dataset/COCO2017/'
+dataset_type = 'CocoTinyDataset'
+data_root = '/home/rr/dataset/COCO2017'
+# dataset_type = 'PlugDataset'
+# data_root = '/media/lsa/MobileDisk3/dataset/PieProject/line/alldata'
 
 # Use RepeatDataset to speed up training
 data = dict(
     samples_per_gpu=16,
-    workers_per_gpu=4,
+    workers_per_gpu=2,
     train=dict(
         _delete_=True,
         type='RepeatDataset',
         times=5,
         dataset=dict(
             type=dataset_type,
-            ann_file=data_root + 'annotations/instances_train2017.json',
-            img_prefix=data_root + 'train2017/',
+            ann_file='/media/rr/ssdMobileDisk/open-mmlab/mmdetection/temp/tinycoco_3/tiny_coco.json',
+            img_prefix='/media/rr/MobileDisk3/dataset/COCO2017/train2017',
+            # ann_file=data_root,
+            # img_prefix=data_root,
             pipeline=train_pipeline)),
-    val=dict(pipeline=test_pipeline),
-    test=dict(pipeline=test_pipeline))
+    val=dict(
+        type=dataset_type,
+        ann_file='/media/rr/ssdMobileDisk/open-mmlab/mmdetection/temp/tinycoco_3/tiny_coco.json',
+        img_prefix='/media/rr/MobileDisk3/dataset/COCO2017/train2017',
+        pipeline=test_pipeline),
+    test=dict(
+        type=dataset_type,
+        ann_file='/media/rr/ssdMobileDisk/open-mmlab/mmdetection/temp/tinycoco_3/tiny_coco.json',
+        img_prefix='/media/rr/MobileDisk3/dataset/COCO2017/train2017',
+        pipeline=test_pipeline))
 
 # optimizer
 # Based on the default settings of modern detectors, the SGD effect is better
 # than the Adam in the source code, so we use SGD default settings and
 # if you use adam+lr5e-4, the map is 29.1.
+# optimizer
+optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -116,7 +130,15 @@ optimizer_config = dict(
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=1000,
-    warmup_ratio=1.0 / 1000,
-    step=[18, 24])  # the real step is [18*5, 24*5]
-runner = dict(max_epochs=28)  # the real epoch is 28*5=140
+    warmup_iters=400,
+    warmup_ratio=1.0 / 400,
+    step=[10, 50, 70])  # the real step is [18*5, 24*5]
+runner = dict(max_epochs=100)  # the real epoch is 28*5=140
+
+checkpoint_config = dict(interval=5)
+log_config = dict(
+    interval=50,
+    hooks=[
+        # dict(type='TextLoggerHook'),
+        dict(type='TensorboardLoggerHook')
+    ])
