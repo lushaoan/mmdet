@@ -85,10 +85,10 @@ test_pipeline = [
         ])
 ]
 
-dataset_type = 'CocoTinyDataset'
-data_root = '/home/rr/dataset/COCO2017'
-# dataset_type = 'PlugDataset'
-# data_root = '/media/lsa/MobileDisk3/dataset/PieProject/line/alldata'
+# dataset_type = 'CocoTinyDataset'
+# data_root = '/home/rr/dataset/COCO2017'
+dataset_type = 'PlugDataset'
+data_root = '/media/lsa/MobileDisk3/dataset/PieProject/line/alldata'
 
 # Use RepeatDataset to speed up training
 data = dict(
@@ -100,15 +100,17 @@ data = dict(
         times=5,
         dataset=dict(
             type=dataset_type,
-            ann_file='/media/rr/ssdMobileDisk/open-mmlab/mmdetection/temp/tinycoco_3/tiny_coco.json',
-            img_prefix='/media/rr/MobileDisk3/dataset/COCO2017/train2017',
-            # ann_file=data_root,
-            # img_prefix=data_root,
+            # ann_file='/media/rr/ssdMobileDisk/open-mmlab/mmdetection/temp/tinycoco_3/tiny_coco.json',
+            # img_prefix='/media/rr/MobileDisk3/dataset/COCO2017/train2017',
+            ann_file=data_root,
+            img_prefix=data_root,
             pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
-        ann_file='/media/rr/ssdMobileDisk/open-mmlab/mmdetection/temp/tinycoco_3/tiny_coco.json',
-        img_prefix='/media/rr/MobileDisk3/dataset/COCO2017/train2017',
+        # ann_file='/media/rr/ssdMobileDisk/open-mmlab/mmdetection/temp/tinycoco_3/tiny_coco.json',
+        # img_prefix='/media/rr/MobileDisk3/dataset/COCO2017/train2017',
+        ann_file=data_root,
+        img_prefix=data_root,
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,

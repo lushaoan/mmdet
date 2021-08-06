@@ -66,3 +66,5 @@ class PlugDataset(CustomDataset):
             bboxes_ignore=bboxes_ignore.astype(np.float32),
             labels_ignore=labels_ignore.astype(np.int64))
         return ann
+
+    # def evaluate(self, results, iorThresh=0.5):
