@@ -4,6 +4,10 @@ import os.path as osp
 import mmcv
 import numpy as np
 from mmcv import Config, DictAction
+import sys
+import os
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../'))
 
 from mmdet.core.evaluation import eval_map
 from mmdet.core.visualization import imshow_gt_det_bboxes

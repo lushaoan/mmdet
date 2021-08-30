@@ -26,7 +26,8 @@ from .custom import CustomDataset
 
 @DATASETS.register_module()
 class CocoTinyDataset(CustomDataset):
-    CLASSES = ('person',)
+    # CLASSES = ('person',)
+    CLASSES = ('person','cat','dog','train','bus')
 
     def load_annotations(self, ann_file):
         """Load annotation from COCO style annotation file.

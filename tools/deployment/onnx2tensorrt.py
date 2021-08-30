@@ -9,6 +9,8 @@ import torch
 from mmcv import Config
 from mmcv.tensorrt import is_tensorrt_plugin_loaded, onnx2trt, save_trt_engine
 
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../'))
 from mmdet.core.export import preprocess_example_input
 from mmdet.core.export.model_wrappers import (ONNXRuntimeDetector,
                                               TensorRTDetector)
