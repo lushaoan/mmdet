@@ -60,10 +60,12 @@ from einops import rearrange
 # valid_obj_id = res[:, 4] > 0.1
 # found = res[valid_obj_id]
 
-onnx_file = '/media/lsa/ssdMobileDisk/open-mmlab/mmdetection/work_dir/line/line.onnx'
-img_path = '/media/lsa/MobileDisk3/dataset/PieProject/line/alldata/left_0.bmp'
+
+onnx_file = '/media/rr/ssdMobileDisk/open-mmlab/mmdetection/work_dir/line/line.onnx'
+img_path = '/media/rr/MobileDisk3/dataset/PieProject/line/alldata/left_0.bmp'
 img = cv2.imread(img_path, cv2.IMREAD_COLOR)
-img = cv2.resize(src=img, dsize=(608, 512))
+# img = cv2.resize(src=img, dsize=(608, 512))
+img = cv2.resize(src=img, dsize=(608, 608))
 
 img_np = np.array([np.float32(img) / 255.]).transpose(0, 3, 1, 2) #以前的失败了应该是这里引起的，成功的时候
                                                                   #config.py: img_norm_cfg = dict(mean=[0, 0, 0], std=[255., 255., 255.], to_rgb=True)

@@ -19,7 +19,7 @@ model = dict(
         use_dcn=False),
     bbox_head=dict(
         type='CenterNetHead',
-        num_classes=1,
+        num_classes=5,
         in_channel=64,
         feat_channel=64,
         loss_center_heatmap=dict(type='GaussianFocalLoss', loss_weight=1.0),
@@ -92,30 +92,28 @@ data_root = '/media/lsa/MobileDisk3/dataset/PieProject/line/alldata'
 
 # Use RepeatDataset to speed up training
 data = dict(
-    samples_per_gpu=16,
-    workers_per_gpu=2,
+    samples_per_gpu=32,
+    workers_per_gpu=4,
     train=dict(
         _delete_=True,
         type='RepeatDataset',
         times=5,
         dataset=dict(
             type=dataset_type,
-            # ann_file='/media/rr/ssdMobileDisk/open-mmlab/mmdetection/temp/tinycoco_3/tiny_coco.json',
-            # img_prefix='/media/rr/MobileDisk3/dataset/COCO2017/train2017',
-            ann_file=data_root,
-            img_prefix=data_root,
+            ann_file='/home/rr/lsa/mmdet/temp/tinycoco_5/tiny_coco.json',
+            img_prefix='/home/rr/dataset/COCO2017/train2017',
+            # ann_file=data_root,
+            # img_prefix=data_root,
             pipeline=train_pipeline)),
     val=dict(
         type=dataset_type,
-        # ann_file='/media/rr/ssdMobileDisk/open-mmlab/mmdetection/temp/tinycoco_3/tiny_coco.json',
-        # img_prefix='/media/rr/MobileDisk3/dataset/COCO2017/train2017',
-        ann_file=data_root,
-        img_prefix=data_root,
+        ann_file='/home/rr/lsa/mmdet/temp/tinycoco_5/tiny_coco.json',
+        img_prefix='/home/rr/dataset/COCO2017/train2017',
         pipeline=test_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file='/media/rr/ssdMobileDisk/open-mmlab/mmdetection/temp/tinycoco_3/tiny_coco.json',
-        img_prefix='/media/rr/MobileDisk3/dataset/COCO2017/train2017',
+        ann_file='/home/rr/lsa/mmdet/temp/tinycoco_5/tiny_coco.json',
+        img_prefix='/home/rr/dataset/COCO2017/train2017',
         pipeline=test_pipeline))
 
 # optimizer
@@ -123,7 +121,7 @@ data = dict(
 # than the Adam in the source code, so we use SGD default settings and
 # if you use adam+lr5e-4, the map is 29.1.
 # optimizer
-optimizer = dict(type='SGD', lr=0.01, momentum=0.9, weight_decay=0.0001)
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
 optimizer_config = dict(
     _delete_=True, grad_clip=dict(max_norm=35, norm_type=2))
 
@@ -132,14 +130,14 @@ optimizer_config = dict(
 lr_config = dict(
     policy='step',
     warmup='linear',
-    warmup_iters=400,
-    warmup_ratio=1.0 / 400,
-    step=[10, 50, 70])  # the real step is [18*5, 24*5]
-runner = dict(max_epochs=100)  # the real epoch is 28*5=140
+    warmup_iters=4000,
+    warmup_ratio=1.0 / 4000,
+    step=[100, 400, 600, 800])  # the real step is [18*5, 24*5]
+runner = dict(max_epochs=1000)  # the real epoch is 28*5=140
 
-checkpoint_config = dict(interval=5)
+checkpoint_config = dict(interval=100)
 log_config = dict(
-    interval=50,
+    interval=30,
     hooks=[
         # dict(type='TextLoggerHook'),
         dict(type='TensorboardLoggerHook')

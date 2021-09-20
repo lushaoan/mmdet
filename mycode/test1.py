@@ -12,6 +12,18 @@ from mmdet.apis import init_detector, inference_detector, show_result_pyplot
 import cv2
 
 
+config_file = '../configs/centernet/centernet_resnet18_140e_tinycoco.py'
+checkpoint_file = '../work_dir/centernet/cocotiny5_1/latest.pth'
+model = init_detector(config_file, checkpoint_file, device='cuda:0')
+img_path = '/home/rr/dataset/COCO2017/train2017/000000262145.jpg'
+# img_path = '/home/rr/dataset/COCO2017/train2017/000000262146.jpg'
+# img_path = '/home/rr/dataset/COCO2017/train2017/000000524291.jpg'
+# img_path = '/home/rr/dataset/COCO2017/train2017/000000262148.jpg'
+# img_path = '/home/rr/dataset/COCO2017/train2017/000000393223.jpg'
+img = cv2.imread(img_path, cv2.IMREAD_COLOR)
+result = inference_detector(model, img)   #返回的是原图的xyxy，每个类别
+show_result_pyplot(model=model, img=img, result=result, score_thr=0.5, title='result')
+
 # config_file = '../configs/centernet/centernet_resnet18_140e_tinycoco.py'
 # checkpoint_file = '/media/lsa/ssdMobileDisk/open-mmlab/mmdetection/work_dir/centernet/line/latest.pth'
 # model = init_detector(config_file, checkpoint_file, device='cuda:0')

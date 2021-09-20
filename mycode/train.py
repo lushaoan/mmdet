@@ -26,7 +26,7 @@ import shutil
 if __name__ == '__main__':
     cfg_file = '../configs/centernet/centernet_resnet18_140e_tinycoco.py'
     cfg = Config.fromfile(cfg_file)
-    cfg.work_dir = '../work_dir/centernet/cocotiny3'
+    cfg.work_dir = '../work_dir/centernet/cocotiny5_1'
     cfg.gpu_ids = range(1)
     cfg.seed = None
 
